@@ -77,12 +77,7 @@ impl Network {
                 println!("mpsc: got stream from {}", stream.peer_addr().unwrap());
                 stream.set_nonblocking(true);
                 self.connections.push(stream);
-                self.flood_transaction(&Transaction {
-                    from: vec![],
-                    to: vec![],
-                    amount: 0,
-                    signature: vec![],
-                });
+                self.flood(&Message{ id: 0, typ: 0, transaction: None, block: None });
             }
             Err(t) => ()
         }
@@ -120,15 +115,26 @@ impl Network {
         self.listen_data();
     }*/
 
+    pub fn flood(&mut self, msg: &Message) {
+        let mut rng = rand::thread_rng();
+
+        let raw_data = serialize(msg).unwrap();
+
+        for (i, mut stream) in self.connections.iter().enumerate() {
+            stream.write(&raw_data);
+        }
+    }
+
     pub fn flood_transaction(&mut self, data: &Transaction) {
         let mut rng = rand::thread_rng();
+
         let msg = Message {
             id: rng.gen::<usize>(),
-            typ: 0,
+            typ: 1,
             transaction: Some(data.clone()),
             block: None,
         };
-        let raw_data = serialize(&data).unwrap();
+        let raw_data = serialize(&msg).unwrap();
 
         for (i, mut stream) in self.connections.iter().enumerate() {
             stream.write(&raw_data);
