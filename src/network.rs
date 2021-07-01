@@ -9,21 +9,19 @@ use std::sync::mpsc;
 use std::thread;
 use std::collections::HashMap;
 use rand::Rng;
+use crate::structures::{Transaction, Message, Block};
+
 
 pub struct Network {
     pub connections: Vec<TcpStream>,
-    pub data_handler: fn(&Network, &String),
+    pub data_handler: fn(&Network, &Message),
     //callback when the network receives data.
-    pub msg_received: HashMap<u64, String>,
+    pub msg_received: HashMap<usize, Message>,
     pub local_address: SocketAddr,
 }
 
-struct Message {
-    id: u64,
-    content: [u8],
-}
 
-pub fn new(handle: fn(&Network, &String)) -> Network {
+pub fn new(handle: fn(&Network, &Message)) -> Network {
     return Network {
         connections: Vec::new(),
         data_handler: handle,
@@ -79,7 +77,12 @@ impl Network {
                 println!("mpsc: got stream from {}", stream.peer_addr().unwrap());
                 stream.set_nonblocking(true);
                 self.connections.push(stream);
-                self.flood(&"connected".to_string());
+                self.flood_transaction(&Transaction {
+                    from: vec![],
+                    to: vec![],
+                    amount: 0,
+                    signature: vec![],
+                });
             }
             Err(t) => ()
         }
@@ -93,10 +96,10 @@ impl Network {
         for (i, mut stream) in self.connections.iter().enumerate() {
             match stream.read(&mut buffer) {
                 Ok(_) => {
-                    let (counter, msg): (u64, String) = deserialize(&buffer).unwrap();
-                    if !self.msg_received.contains_key(&counter) {
+                    let msg: Message = deserialize(&buffer).unwrap();
+                    if !self.msg_received.contains_key(&msg.id) {
                         (self.data_handler)(&self, &msg); //some method supplied in main.rs
-                        self.msg_received.insert(counter, msg);
+                        self.msg_received.insert(msg.id, msg);
                         tobe_redistributed.push(buffer);
                     }
                 }
@@ -117,9 +120,15 @@ impl Network {
         self.listen_data();
     }*/
 
-    pub fn flood(&mut self, data: &String) {
+    pub fn flood_transaction(&mut self, data: &Transaction) {
         let mut rng = rand::thread_rng();
-        let raw_data = serialize(&(rng.gen::<u64>(), data)).unwrap();
+        let msg = Message {
+            id: rng.gen::<usize>(),
+            typ: 0,
+            transaction: Some(data.clone()),
+            block: None,
+        };
+        let raw_data = serialize(&data).unwrap();
 
         for (i, mut stream) in self.connections.iter().enumerate() {
             stream.write(&raw_data);
