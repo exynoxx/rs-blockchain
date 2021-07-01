@@ -9,6 +9,7 @@ enum Commands {
     ERR,
 }
 
+//read line from STD-IN
 fn readline() -> Vec<String> {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
@@ -26,6 +27,7 @@ fn readline() -> Vec<String> {
     };
 }*/
 
+//thread read lines from stdin and send them in tunnel, return tunnel to caller
 pub(crate) fn init() -> mpsc::Receiver<Vec<String>> {
     let (tx, rx) = mpsc::channel();
     thread::spawn(move || {

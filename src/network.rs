@@ -15,8 +15,6 @@ pub struct Network {
     pub data_handler: fn(&Network, &String),
     //callback when the network receives data.
     pub msg_received: HashMap<u64, String>,
-    pub msg_counter: u64,
-    //remove me
     pub local_address: SocketAddr,
 }
 
@@ -30,7 +28,6 @@ pub fn new(handle: fn(&Network, &String)) -> Network {
         connections: Vec::new(),
         data_handler: handle,
         msg_received: HashMap::new(),
-        msg_counter: 0,
         local_address: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
     };
 }
@@ -114,11 +111,11 @@ impl Network {
 
     // -------------------------------------
 
-    pub fn event_loop(&mut self, rx: &mpsc::Receiver<TcpStream>) {
+    /*pub fn event_loop(&mut self, rx: &mpsc::Receiver<TcpStream>) {
         // ABOVE 2 METHODS
         self.listen_connection(&rx);
         self.listen_data();
-    }
+    }*/
 
     pub fn flood(&mut self, data: &String) {
         let mut rng = rand::thread_rng();

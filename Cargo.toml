@@ -9,9 +9,6 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 bincode = "1.2.1"
-elgamal_ristretto = "0.2.3"
-rand = "0.7.0"
-rand_core = "0.6.3"
-num = "*"
-curve25519-dalek-fiat = "0.1.0"
-
+rand = "0.8.4"
+rsa = "0.4.0"
+sha2 = "0.9.5"

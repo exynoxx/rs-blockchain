@@ -3,9 +3,12 @@ use std::sync::Mutex;
 use std::sync::Arc;
 use bincode::{deserialize, serialize};
 use std::collections::HashMap;
+use crate::crypto::test;
 
 mod network;
 mod frontend;
+mod crypto;
+
 
 struct Ledger {
     accounts: HashMap<[u8; 64], i64> //public key -> account balance
@@ -47,27 +50,16 @@ fn main() {
     loop {
 
         //input
-        match rx_input.try_recv() {
-            Ok(line) => match line[0].as_str() {
-                "flood" => {
-                    //let transaction = 0; //Transaction {};
-                    network.flood(&line[1]);
-                }
-                _=> ()
-            }
-            Err(t) => ()
+        let line = rx_input.try_recv().unwrap_or(vec!["-1".to_string()]);
+        match line[0].as_str() {
+            "flood" => network.flood(&line[1]),
+            _ => ()
         }
 
         //network
-        network.event_loop(&rx_incoming_connections);
+        network.listen_connection(&rx_incoming_connections);
+        network.listen_data();
     }
-
-
-    /*let (pk,sk) = gen();
-
-    let msg = "yo".as_bytes();
-    let s = sign(&msg, &sk);
-    println!("{}", verify(&msg,&pk,&s));*/
 }
 
 
