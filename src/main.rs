@@ -1,12 +1,11 @@
-use std::net::{TcpStream, Ipv4Addr};
+use std::net::{TcpStream, Ipv4Addr, SocketAddr, IpAddr};
 use std::sync::Mutex;
 use std::sync::Arc;
 use bincode::{deserialize, serialize};
-use crate::crypto::{gen, sign, verify, sha3};
+use std::collections::HashMap;
 
 mod network;
-mod crypto;
-
+mod frontend;
 
 struct Ledger {
     accounts: HashMap<[u8; 64], i64> //public key -> account balance
@@ -14,7 +13,7 @@ struct Ledger {
 
 impl Ledger {
     pub fn update_account(&mut self, pk: &[u8], amount: i64) {
-        *self.accounts.entry(pk).or_insert(0) += amount;
+        //*self.accounts.entry(pk).or_insert(0) += amount;
     }
 }
 
@@ -33,21 +32,42 @@ struct Block {
 }
 
 
+fn handle(network: &network::Network, msg: &String) {
+    println!("handling data {:?}", msg);
+}
 
 
 fn main() {
-    /*let mut network = network::Network{connections: Vec::new(), data_handler: handle };
-    let rx = network.setup();
-    network.event_loop(&rx);*/
+    let mut network = network::new(handle);
+    let rx_incoming_connections = network.setup();
 
-    let (pk, sk) = gen();
+    //async input handling
+    let rx_input = frontend::init();
+
+    loop {
+
+        //input
+        match rx_input.try_recv() {
+            Ok(line) => match line[0].as_str() {
+                "flood" => {
+                    //let transaction = 0; //Transaction {};
+                    network.flood(&line[1]);
+                }
+                _=> ()
+            }
+            Err(t) => ()
+        }
+
+        //network
+        network.event_loop(&rx_incoming_connections);
+    }
+
+
+    /*let (pk,sk) = gen();
+
     let msg = "yo".as_bytes();
-    let sign = sign(&msg, &sk);
-    println!("{}", verify(&msg, &pk, &sign));
+    let s = sign(&msg, &sk);
+    println!("{}", verify(&msg,&pk,&s));*/
 }
 
 
-fn handle(data: &[u8]) {
-    let d: String = deserialize(data).unwrap();
-    println!("handling data {:?}", d);
-}
