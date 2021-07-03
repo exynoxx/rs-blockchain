@@ -9,7 +9,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::collections::HashMap;
 use rand::Rng;
-use crate::structures::{Transaction, Message, Block};
+use crate::structures::{Transaction, Message, Block, SignedTransaction};
 
 
 pub struct Network {
@@ -86,6 +86,7 @@ impl Network {
         //receive data (non blocking) on each stream
         const buffersize: usize = 1024;
         let mut buffer = [0u8; buffersize];
+
         let mut tobe_redistributed: Vec<[u8; buffersize]> = vec![];
 
         for (i, mut stream) in self.connections.iter().enumerate() {
@@ -125,7 +126,7 @@ impl Network {
         }
     }
 
-    pub fn flood_transaction(&mut self, data: &Transaction) {
+    pub fn flood_transaction(&mut self, data: &SignedTransaction) {
         let mut rng = rand::thread_rng();
 
         let msg = Message {

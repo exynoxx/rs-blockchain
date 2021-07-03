@@ -19,8 +19,14 @@ pub struct Transaction {
     pub from: Vec<u8>,
     pub to: Vec<u8>,
     pub amount: u64,
+}
+
+#[derive(Serialize, Deserialize, Debug,Clone)]
+pub struct SignedTransaction {
+    pub transaction: Transaction,
     pub signature: Vec<u8>,
 }
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Block {
