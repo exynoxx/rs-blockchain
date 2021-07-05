@@ -9,19 +9,19 @@ use std::sync::mpsc;
 use std::thread;
 use std::collections::HashMap;
 use rand::Rng;
-use crate::structures::{Transaction, Message, Block, SignedTransaction};
+use crate::structures::{Transaction, Message, Block, SignedTransaction, Ledger};
 
 
 pub struct Network {
     pub connections: Vec<TcpStream>,
-    pub data_handler: fn(&Network, &Message),
+    pub data_handler: fn(&mut Ledger, &Message),
     //callback when the network receives data.
     pub msg_received: HashMap<usize, Message>,
     pub local_address: SocketAddr,
 }
 
 
-pub fn new(handle: fn(&Network, &Message)) -> Network {
+pub fn new(handle: fn(&mut Ledger, &Message)) -> Network {
     return Network {
         connections: Vec::new(),
         data_handler: handle,
@@ -82,7 +82,7 @@ impl Network {
             Err(t) => ()
         }
     }
-    pub fn listen_data(&mut self) {
+    pub fn listen_data(&mut self,ledger:  &mut Ledger) {
         //receive data (non blocking) on each stream
         const buffersize: usize = 1024;
         let mut buffer = [0u8; buffersize];
@@ -94,7 +94,7 @@ impl Network {
                 Ok(_) => {
                     let msg: Message = deserialize(&buffer).unwrap();
                     if !self.msg_received.contains_key(&msg.id) {
-                        (self.data_handler)(&self, &msg); //some method supplied in main.rs
+                        (self.data_handler)(ledger, &msg); //some method supplied in main.rs
                         self.msg_received.insert(msg.id, msg);
                         tobe_redistributed.push(buffer);
                     }

@@ -5,12 +5,20 @@ use bincode::Options;
 
 
 pub struct Ledger {
-    accounts: HashMap<Vec<u8>, i64> //public key -> account balance
+    pub accounts: HashMap<Vec<u8>, u64> //public key -> account balance
 }
 
 impl Ledger {
     pub fn update_account(&mut self, pk: &Vec<u8>, amount: i64) {
-        //*self.accounts.entry(pk).or_insert(0) += amount;
+        match self.accounts.get_mut(pk){
+            Some(v) => {
+                let mut signed_value = *v as i64;
+                signed_value += amount;
+                *v = signed_value as u64;
+            },
+            None => {self.accounts.insert(pk.clone(),100);},
+
+        }
     }
 }
 
@@ -39,6 +47,6 @@ pub struct Block {
 pub struct Message {
     pub id: usize,
     pub typ: usize,
-    pub transaction: Option<Transaction>,
+    pub transaction: Option<SignedTransaction>,
     pub block: Option<Block>,
 }

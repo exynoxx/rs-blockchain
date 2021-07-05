@@ -3,75 +3,74 @@ use std::sync::Mutex;
 use std::sync::Arc;
 use bincode::{deserialize, serialize};
 use std::collections::HashMap;
-use crate::crypto::{test, gen,sign,verify};
-use crate::structures::{Transaction, Message, SignedTransaction};
+use crate::crypto::{test, gen, sign, verify, deserialize_key, key_to_string, string_to_key};
+use crate::structures::{Transaction, Message, SignedTransaction, Ledger};
 use rsa::{PublicKeyEncoding, PrivateKeyEncoding, PublicKeyParts, BigUint, RSAPrivateKey, RSAPublicKey};
+use serde::{Serialize, Deserialize};
+use std::borrow::Borrow;
+use std::thread;
 
 mod network;
 mod frontend;
 mod crypto;
 mod structures;
 
-fn handle(network: &network::Network, msg: &Message) {
-    println!("handling data {:?}", msg);
+fn signature_valid(t: &SignedTransaction) -> bool {
+    return true;
 }
 
+fn handle(blockchain: &mut Ledger, msg: &Message) {
+    match msg.typ {
+        0 => println!("greetings"),
+        1 => {
+            println!("incoming transaction");
+            //Is signature valid? return if not
+
+            let transaction = match &msg.transaction {
+                Some(t) => {
+                    if !signature_valid(&t) {
+                        println!("Invalid signature");
+                        return;
+                    }
+                    &t.transaction
+                }
+                None => {println!("No signature");return}
+            };
+
+            blockchain.update_account(&transaction.from,-(transaction.amount as i64));
+            blockchain.update_account(&transaction.to,transaction.amount as i64);
+        }
+        _ => println!("handling data {:?}", msg)
+    }
+
+    println!("hash map {:?}", blockchain.accounts);
+}
 
 fn main() {
-    let mut network = network::new(handle);
-    let rx_incoming_connections = network.setup();
-    let mut private_key = None;
-    let mut public_key = None;
 
-    //async input handling
-    let rx_input = frontend::init();
+    //init underlying network
+    let mut network = network::new(handle);
+    let incoming_connections_channel = network.setup();
+
+    //init blockchain
+    let mut ledger = Ledger{ accounts: HashMap::new() };
+    let (mut public_key, mut private_key) = gen();
+    println!("Gen called");
+    println!("Public Key: {}", key_to_string(&public_key));
+
+    //init async input handling
+    let input_channel = frontend::init();
 
     loop {
-
         //input
-        let line = rx_input.try_recv().unwrap_or(vec!["-1".to_string()]);
-        match line[0].as_str() {
-            "gen" => {
-                let (pk, sk) = gen();
-                println!("Public Key: {:?} {:?}", pk.e().to_str_radix(16), pk.n().to_str_radix(16));
-                //println!("Private Key: {:?}",sk.to_pkcs8().expect("Could not extract string from sk"));
-                private_key = Some(sk);
-                public_key = Some(pk);
-            }
-
-            "transfer" => {
-                let amount = line[1].parse::<u64>().unwrap();
-                let to_str_e = line[2];
-                let to_str_n = line[3];
-                let receiver_pk = RSAPublicKey { n: BigUint::from_str_radix(to_str_n,16), e: BigUint::from_str_radix(to_str_e,16) };
-
-                let mut t = Transaction {
-                    from: private_key.unwrap().to_pkcs8().expect("error"),
-                    to: receiver_pk.to_pkcs8().expect("error"),
-                    amount: amount
-                };
-
-                let transaction = SignedTransaction {
-                    transaction: t,
-                    signature: crypto::sign(&serialize(&t), &private_key)
-                };
-
-                network.flood_transaction(&transaction);
-
-
-            }
-
-            "flood" => network.flood_transaction(&Transaction {
-                from: vec![],
-                to: vec![],
-                amount: 0,
-            }),
-            _ => ()
-        }
+        frontend::pull_input(&mut network, &input_channel,&mut public_key,&mut private_key);
 
         //network
-        network.listen_connection(&rx_incoming_connections);
-        network.listen_data();
+        network.listen_connection(&incoming_connections_channel);
+        network.listen_data(&mut ledger);
+
+        //performance
+        thread::yield_now();
     }
 }
 

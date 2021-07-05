@@ -1,6 +1,13 @@
 use std::io;
 use std::sync::mpsc;
 use std::thread;
+use crate::crypto::{gen, key_to_string, string_to_key};
+use crate::structures::{Transaction, SignedTransaction};
+use crate::crypto;
+use bincode::serialize;
+use rsa::{RSAPublicKey, RSAPrivateKey};
+use crate::network::Network;
+
 enum Commands {
     TRANSFER,
     VIEWBALANCE,
@@ -36,4 +43,52 @@ pub(crate) fn init() -> mpsc::Receiver<Vec<String>> {
         }
     });
     return rx;
+}
+
+
+pub fn pull_input(network: &mut Network, input_channel: &mpsc::Receiver<Vec<String>>, public_key: &mut RSAPublicKey, private_key: &mut RSAPrivateKey) {
+    let line = input_channel.try_recv().unwrap_or(vec!["-1".to_string()]);
+    match line[0].as_str() {
+        "gen" => {
+            let (pk, sk) = gen();
+            println!("Public Key: {}", key_to_string(&pk));
+
+            //println!("Private Key: {:?}",sk.to_pkcs8().expect("Could not extract string from sk"));
+            *private_key = sk.clone();
+            *public_key = pk.clone();
+        }
+
+        "transfer" => {
+            let amount = line[1].parse::<u64>().unwrap();
+            let receiver_pk = string_to_key(&line[2]);
+
+            let pk = &public_key;
+            let sk = &private_key;
+
+            let t = Transaction {
+                from: crypto::serialize_key(&pk),
+                to: crypto::serialize_key(&receiver_pk),
+                amount: amount,
+            };
+
+            let signature = crypto::sign(&serialize(&t).expect("could not serialize"), &sk);
+
+            let transaction = SignedTransaction {
+                transaction: t,
+                signature: signature,
+            };
+
+            network.flood_transaction(&transaction);
+        }
+
+        "flood" => network.flood_transaction(&SignedTransaction {
+            transaction: Transaction {
+                from: vec![],
+                to: vec![],
+                amount: 0,
+            },
+            signature: vec![],
+        }),
+        _ => ()
+    }
 }
