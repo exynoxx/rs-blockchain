@@ -14,17 +14,14 @@ use crate::structures::{Transaction, Message, Block, SignedTransaction, Ledger};
 
 pub struct Network {
     pub connections: Vec<TcpStream>,
-    pub data_handler: fn(&mut Ledger, &Message),
-    //callback when the network receives data.
     pub msg_received: HashMap<usize, Message>,
     pub local_address: SocketAddr,
 }
 
 
-pub fn new(handle: fn(&mut Ledger, &Message)) -> Network {
+pub fn new() -> Network {
     return Network {
         connections: Vec::new(),
-        data_handler: handle,
         msg_received: HashMap::new(),
         local_address: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080),
     };
@@ -77,24 +74,24 @@ impl Network {
                 println!("mpsc: got stream from {}", stream.peer_addr().unwrap());
                 stream.set_nonblocking(true);
                 self.connections.push(stream);
-                self.flood(&Message{ id: 0, typ: 0, transaction: None, block: None });
+                self.flood(&Message { id: 0, typ: 0, transaction: None, block: None });
             }
             Err(t) => ()
         }
     }
-    pub fn listen_data(&mut self,ledger:  &mut Ledger) {
+    pub fn listen_data(&mut self, data_handler: fn(&mut Ledger, &Message), ledger: &mut Ledger) {
         //receive data (non blocking) on each stream
-        const buffersize: usize = 1024;
-        let mut buffer = [0u8; buffersize];
+        const BUFFERSIZE: usize = 1024;
+        let mut buffer = [0u8; BUFFERSIZE];
 
-        let mut tobe_redistributed: Vec<[u8; buffersize]> = vec![];
+        let mut tobe_redistributed: Vec<[u8; BUFFERSIZE]> = vec![];
 
         for (i, mut stream) in self.connections.iter().enumerate() {
             match stream.read(&mut buffer) {
                 Ok(_) => {
                     let msg: Message = deserialize(&buffer).unwrap();
                     if !self.msg_received.contains_key(&msg.id) {
-                        (self.data_handler)(ledger, &msg); //some method supplied in main.rs
+                        (data_handler)(ledger, &msg); //some method supplied in main.rs
                         self.msg_received.insert(msg.id, msg);
                         tobe_redistributed.push(buffer);
                     }
