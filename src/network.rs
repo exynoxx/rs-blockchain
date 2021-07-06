@@ -108,17 +108,7 @@ impl Network {
         }
     }
 
-    // -------------------------------------
-
-    /*pub fn event_loop(&mut self, rx: &mpsc::Receiver<TcpStream>) {
-        // ABOVE 2 METHODS
-        self.listen_connection(&rx);
-        self.listen_data();
-    }*/
-
     pub fn flood(&mut self, msg: &Message) {
-        let mut rng = rand::thread_rng();
-
         let raw_data = serialize(msg).unwrap();
 
         for (i, mut stream) in self.connections.iter().enumerate() {

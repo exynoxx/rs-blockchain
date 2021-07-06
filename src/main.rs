@@ -48,6 +48,7 @@ fn handle(blockchain: &mut Ledger, msg: &Message) {
 
 fn main() {
 
+
     //init underlying network
     let mut network = network::new(handle);
     let incoming_connections_channel = network.setup();
@@ -68,9 +69,6 @@ fn main() {
         //network
         network.listen_connection(&incoming_connections_channel);
         network.listen_data(&mut ledger);
-
-        //performance
-        thread::yield_now();
     }
 }
 

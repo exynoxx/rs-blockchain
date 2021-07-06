@@ -8,31 +8,12 @@ use bincode::serialize;
 use rsa::{RSAPublicKey, RSAPrivateKey};
 use crate::network::Network;
 
-enum Commands {
-    TRANSFER,
-    VIEWBALANCE,
-    VIEWALL,
-    HELP,
-    ERR,
-}
-
 //read line from STD-IN
 fn readline() -> Vec<String> {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
     return buffer.trim().split(' ').map(|s| s.to_string()).collect();
 }
-
-/*pub(crate) fn get_input() -> Commands {
-    let line = readline();
-    return match line[0].as_str() {
-        "transfer" => Commands::TRANSFER,
-        "viewbalance" => Commands::VIEWBALANCE,
-        "viewall" => Commands::VIEWALL,
-        "help" => Commands::HELP,
-        _ => Commands::ERR
-    };
-}*/
 
 //thread read lines from stdin and send them in tunnel, return tunnel to caller
 pub(crate) fn init() -> mpsc::Receiver<Vec<String>> {
@@ -68,14 +49,14 @@ pub fn pull_input(network: &mut Network, input_channel: &mpsc::Receiver<Vec<Stri
             let t = Transaction {
                 from: crypto::serialize_key(&pk),
                 to: crypto::serialize_key(&receiver_pk),
-                amount: amount,
+                amount,
             };
 
             let signature = crypto::sign(&serialize(&t).expect("could not serialize"), &sk);
 
             let transaction = SignedTransaction {
                 transaction: t,
-                signature: signature,
+                signature,
             };
 
             network.flood_transaction(&transaction);
