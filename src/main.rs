@@ -8,13 +8,11 @@ mod blockchain;
 fn main() {
     //init underlying network
     let mut network = network::new();
-    let incoming_connections_channel = network.setup();
+    network.setup();
 
     //init blockchain
     let mut blockchain = blockchain::new();
     blockchain.init();
-    println!("Gen called");
-    println!("Public Key: {}", key_to_string(&blockchain.public_key));
 
     //init async input handling
     let input_channel = frontend::init();
@@ -24,7 +22,7 @@ fn main() {
         frontend::pull_input(&mut network, &input_channel, &mut blockchain.public_key, &mut blockchain.private_key);
 
         //network
-        network.listen_connection(&incoming_connections_channel);
+        network.listen_connection();
         network.listen_data(&mut blockchain,blockchain::handle);
 
         //blockchain

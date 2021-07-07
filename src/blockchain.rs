@@ -11,7 +11,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use crate::crypto;
-use crate::crypto::gen;
+use crate::crypto::{gen, key_to_string};
 use crate::network::{Message, Network};
 
 pub struct Ledger {
@@ -66,6 +66,9 @@ fn transaction_valid(t: &Transaction) -> bool {
 
 pub fn new() -> BlockChain {
     let (pk, sk) = gen();
+
+    println!("Gen called");
+    println!("Public Key: {}", key_to_string(&pk));
 
     let (tx, _) = mpsc::channel();
     let (_, rx) = mpsc::channel();
