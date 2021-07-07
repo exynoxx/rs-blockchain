@@ -6,7 +6,7 @@ use serde::{Serialize, Deserialize};
 use bincode::{deserialize, serialize};
 
 pub fn test() {
-    let mut rng = OsRng;
+    let rng = OsRng;
     let bits = 1024;
     let (public_key,private_key) = gen();
     let msg = "message".as_bytes();

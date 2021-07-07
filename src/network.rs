@@ -10,7 +10,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::collections::HashMap;
 use rand::Rng;
-use crate::blockchain::{BlockChain, SignedTransaction, Block};
+use crate::blockchain::{BlockChain, SignedTransaction, Block, SignedBlock};
 
 
 pub struct Network {
@@ -24,7 +24,7 @@ pub struct Message {
     pub id: usize,
     pub typ: usize,
     pub transaction: Option<SignedTransaction>,
-    pub block: Option<Block>,
+    pub block: Option<SignedBlock>,
 }
 
 
@@ -132,6 +132,22 @@ impl Network {
             typ: 1,
             transaction: Some(data.clone()),
             block: None,
+        };
+        let raw_data = serialize(&msg).unwrap();
+
+        for (i, mut stream) in self.connections.iter().enumerate() {
+            stream.write(&raw_data);
+        }
+    }
+
+    pub fn flood_block(&mut self, data:&SignedBlock) {
+        let mut rng = rand::thread_rng();
+
+        let msg = Message {
+            id: rng.gen::<usize>(),
+            typ: 2,
+            transaction: None,
+            block: Some(data.clone()),
         };
         let raw_data = serialize(&msg).unwrap();
 

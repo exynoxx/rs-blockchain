@@ -12,6 +12,7 @@ fn main() {
 
     //init blockchain
     let mut blockchain = blockchain::new();
+    blockchain.init();
     println!("Gen called");
     println!("Public Key: {}", key_to_string(&blockchain.public_key));
 
@@ -25,6 +26,9 @@ fn main() {
         //network
         network.listen_connection(&incoming_connections_channel);
         network.listen_data(&mut blockchain,blockchain::handle);
+
+        //blockchain
+        blockchain.listen_block(&mut network);
     }
 }
 
