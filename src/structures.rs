@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use bincode;
 use bincode::Options;
+use rsa::{RSAPublicKey, RSAPrivateKey};
 
 
 pub struct Ledger {
@@ -50,3 +51,4 @@ pub struct Message {
     pub transaction: Option<SignedTransaction>,
     pub block: Option<Block>,
 }
+

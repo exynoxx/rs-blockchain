@@ -10,6 +10,7 @@ use std::thread;
 use std::collections::HashMap;
 use rand::Rng;
 use crate::structures::{Transaction, Message, Block, SignedTransaction, Ledger};
+use crate::blockchain::BlockChain;
 
 
 pub struct Network {
@@ -79,7 +80,7 @@ impl Network {
             Err(t) => ()
         }
     }
-    pub fn listen_data(&mut self, data_handler: fn(&mut Ledger, &Message), ledger: &mut Ledger) {
+    pub fn listen_data(&mut self, blockchain:&mut BlockChain, data_handler: fn(&mut BlockChain,&Message)) {
         //receive data (non blocking) on each stream
         const BUFFERSIZE: usize = 1024;
         let mut buffer = [0u8; BUFFERSIZE];
@@ -91,7 +92,7 @@ impl Network {
                 Ok(_) => {
                     let msg: Message = deserialize(&buffer).unwrap();
                     if !self.msg_received.contains_key(&msg.id) {
-                        (data_handler)(ledger, &msg); //some method supplied in main.rs
+                        (data_handler)(blockchain,&msg); //some method supplied in main.rs
                         self.msg_received.insert(msg.id, msg);
                         tobe_redistributed.push(buffer);
                     }
