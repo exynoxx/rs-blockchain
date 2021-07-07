@@ -1,4 +1,5 @@
 use bincode::{deserialize, serialize};
+use serde::{Serialize, Deserialize};
 
 use std::env;
 use std::io::Read;
@@ -9,8 +10,7 @@ use std::sync::mpsc;
 use std::thread;
 use std::collections::HashMap;
 use rand::Rng;
-use crate::structures::{Transaction, Message, Block, SignedTransaction, Ledger};
-use crate::blockchain::BlockChain;
+use crate::blockchain::{BlockChain, SignedTransaction, Block};
 
 
 pub struct Network {
@@ -18,6 +18,16 @@ pub struct Network {
     pub msg_received: HashMap<usize, Message>,
     pub local_address: SocketAddr,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Message {
+    pub id: usize,
+    pub typ: usize,
+    pub transaction: Option<SignedTransaction>,
+    pub block: Option<Block>,
+}
+
+
 
 
 pub fn new() -> Network {

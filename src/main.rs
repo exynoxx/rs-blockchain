@@ -3,7 +3,6 @@ use crate::crypto::{gen, key_to_string, string_to_key};
 mod network;
 mod frontend;
 mod crypto;
-mod structures;
 mod blockchain;
 
 fn main() {

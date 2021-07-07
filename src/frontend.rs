@@ -2,11 +2,11 @@ use std::io;
 use std::sync::mpsc;
 use std::thread;
 use crate::crypto::{gen, key_to_string, string_to_key};
-use crate::structures::{Transaction, SignedTransaction};
 use crate::crypto;
 use bincode::serialize;
 use rsa::{RSAPublicKey, RSAPrivateKey};
 use crate::network::Network;
+use crate::blockchain::{Transaction, SignedTransaction};
 
 //read line from STD-IN
 fn readline() -> Vec<String> {
